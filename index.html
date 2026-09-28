@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="FactorSplat: Appearance-Controllable Gaussian Proxies for Medical Volume Rendering. One N-DGS checkpoint per scan takes unseen transfer-function edits at inference without retraining.">
+  <meta property="og:title" content="FactorSplat" />
+  <meta property="og:description" content="FactorSplat: Appearance-Controllable Gaussian Proxies for Medical Volume Rendering" />
+  <meta property="og:url" content="https://gaozhongpai.github.io/FactorSplat/" />
+  <meta property="og:image" content="static/images/factorsplat.webp" />
+  <meta property="og:image:width" content="512" />
+  <meta property="og:image:height" content="512" />
+
+  <meta name="twitter:title" content="FactorSplat">
+  <meta name="twitter:description" content="Appearance-Controllable Gaussian Proxies for Medical Volume Rendering">
+  <meta name="twitter:image" content="static/images/factorsplat.webp">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="keywords" content="FactorSplat, transfer function, Gaussian Splatting, N-DGS, medical volume rendering, CT, MRI, cinematic rendering">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>FactorSplat: Appearance-Controllable Gaussian Proxies for Medical Volume Rendering</title>
+  <link rel="icon" type="image/webp" href="static/images/factorsplat.webp">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Bulma -->
+  <link rel="stylesheet" href="static/css/bulma.min.css">
+  <link rel="stylesheet" href="static/css/index.css">
+
+  <!-- NDSplat theme (loaded last so it wins the cascade) -->
+  <link rel="stylesheet" href="static/css/ndsplat-theme.css">
+  <script defer src="static/js/ndsplat-nav.js"></script>
+
+  <style>
+    /* FactorSplat-specific accents on top of the NDSplat theme */
+    .fs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:1.4rem}
+    @media (max-width:768px){.fs-grid{grid-template-columns:1fr}}
+    .fs-card{border:1px solid var(--line);border-radius:14px;padding:16px 18px;background:#fff;box-shadow:var(--shadow)}
+    .fs-card h4{margin:0 0 .35rem;font-size:1.0rem;font-weight:700;color:var(--ink)}
+    .fs-card p{margin:0;font-size:.9rem;color:var(--ink-soft);line-height:1.5}
+    .fs-card .tag-line{font-family:var(--nd-mono);font-size:.72rem;letter-spacing:.06em;
+      text-transform:uppercase;color:var(--accent-ink);margin-bottom:.45rem}
+    .fs-cap{color:var(--ink-soft);max-width:820px;margin:0 auto 1.2rem}
+    .fs-note{color:var(--ink-faint);font-size:.85rem;margin-top:.8rem}
+    .rfm-metrics td.c-ds{text-align:left;font-weight:600;vertical-align:middle;background:#fff}
+    .rfm-metrics td.c-ds small{display:block;font-weight:500;color:var(--ink-faint);font-size:.72rem;
+      text-transform:uppercase;letter-spacing:.06em;margin-top:.2rem}
+    .rfm-metrics tr.fs-block td{border-top:3px solid #11131e}
+    .rfm-metrics tr.fs-dash td{border-top:1px dashed #b9bfcf}
+    .rfm-metrics th.sep, .rfm-metrics td.sep{border-left:1px solid var(--line)}
+    .rfm-metrics th.grp{text-align:center}
+    .nd-hero .button.is-static-soon{opacity:.6;cursor:default;pointer-events:none}
+    .fs-qual{margin-top:1.4rem}
+    .fs-qual img{width:100%;border-radius:12px;box-shadow:var(--shadow)}
+  </style>
+</head>
+
+<body>
+
+  <!-- ============ NDSplat NAV ============ -->
+  <header class="nd-nav" id="ndNav">
+    <div class="nd-nav-inner">
+      <a class="nd-brand" href="https://gaozhongpai.github.io/ndsplat/"><span class="mk">ND</span>Splat</a>
+      <nav class="nd-nav-links">
+        <a href="https://gaozhongpai.github.io/6dgs/">6DGS</a>
+        <a href="https://gaozhongpai.github.io/7dgs/">7DGS</a>
+        <a href="https://rongliu-leo.github.io/universal-beta-splatting/">UBS</a>
+        <a href="https://gaozhongpai.github.io/dgs/">dGS / dBS</a>
+        <a href="https://gaozhongpai.github.io/renderfm/">Render-FM</a>
+        <a href="https://gaozhongpai.github.io/XClipGS/">XClipGS</a>
+        <a href="https://gaozhongpai.github.io/FactorSplat/" class="current">FactorSplat</a>
+      </nav>
+      <button class="nd-nav-toggle" id="ndNavToggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ======================= HERO ======================= -->
+  <section class="hero nd-hero">
+    <div class="nd-hero-bg" aria-hidden="true"></div>
+    <div class="hero-body">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column has-text-centered">
+            <span class="nd-venue"><span class="dot"></span>Under review</span>
+            <h1 class="title is-1 publication-title">FactorSplat: Appearance-Controllable Gaussian Proxies for Medical Volume Rendering</h1>
+
+            <div class="is-size-5 publication-authors">
+              <!-- Double-blind review: add the author list and affiliations after the decision. -->
+              <span class="author-block">Anonymous authors &middot; paper under double-blind review</span>
+            </div>
+
+            <div class="column has-text-centered">
+              <div class="publication-links">
+                <!-- TODO: point these at the paper / code once public -->
+                <span class="link-block">
+                  <a class="external-link button is-normal is-rounded is-dark is-static-soon" aria-disabled="true">
+                    <span class="icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm76.45 211.36l-96.42 95.7c-6.65 6.61-17.39 6.61-24.04 0l-96.42-95.7C73.42 337.29 80.54 320 94.82 320H160v-80c0-8.84 7.16-16 16-16h32c8.84 0 16 7.16 16 16v80h65.18c14.28 0 21.4 17.29 10.27 27.36zM377 105L279.1 7c-4.5-4.5-10.6-7-17-7H256v128h128v-6.1c0-6.3-2.5-12.4-7-16.9z"/></svg>
+                    </span>
+                    <span>Paper (soon)</span>
+                  </a>
+                </span>
+                <span class="link-block">
+                  <a class="external-link button is-normal is-rounded is-dark is-static-soon" aria-disabled="true">
+                    <span class="icon">
+                      <svg viewBox="0 0 16 16" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                    </span>
+                    <span>Code (soon)</span>
+                  </a>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= STAT STRIP ======================= -->
+  <div class="nd-stats">
+    <div class="nd-stat"><div class="num">+1.52 dB</div><div class="lbl">PSNR over VEG &middot; interpolation</div></div>
+    <div class="nd-stat"><div class="num">524 FPS</div><div class="lbl">At 1600&sup2; (B200)</div></div>
+    <div class="nd-stat"><div class="num">1.17 ms</div><div class="lbl">Per TF switch</div></div>
+  </div>
+
+  <!-- ======================= TEASER ======================= -->
+  <section class="hero teaser nd-reveal">
+    <div class="container is-max-desktop">
+      <div class="hero-body">
+        <img src="static/images/teaser.jpg" alt="FactorSplat, the path-traced reference, and VEG under two vascular transfer-function edits" style="height:100%;width:100%;">
+        <h2 class="subtitle has-text-centered">
+          <b>Change appearance without retraining.</b> Two vascular transfer-function edits: highlight selected
+          tissue (top) and change tissue colors (bottom). FactorSplat (left) tracks the path-traced reference
+          (middle); VEG (right) misses the edit. Full-frame PSNR.
+        </h2>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= ABSTRACT ======================= -->
+  <section class="section hero is-light nd-reveal">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <h2 class="title is-3">Abstract</h2>
+          <div class="content has-text-justified">
+            <p>
+              Transfer functions (TFs) control color and visibility in medical volume rendering, but image-trained
+              Gaussian proxies typically bake one transfer function into their appearance. We present
+              <b>FactorSplat</b>, a per-scene N-dimensional Gaussian splatting (N-DGS) proxy that accepts
+              <b>region-specific intensity-to-RGBA curves at inference</b>.
+            </p>
+            <p>
+              A local lookup applies the authored color and opacity change, while a shared functional encoder and
+              low-rank per-Gaussian factors learn the residual appearance response. Geometry and directional
+              appearance remain shared across presets, with visibility control and TF-aware pruning preserving the
+              ability to hide and reveal structures.
+            </p>
+            <p>
+              On seven CT and MR scans, FactorSplat improves mean PSNR and changed-region error over region-aware VEG
+              across validation, interpolation, unseen composition, and out-of-distribution (OOD) edits. Across these
+              four splits, seven-scan mean PSNR gains over VEG range from <b>1.10 to 1.52&nbsp;dB</b>. One checkpoint
+              per scan supports unseen edits without retraining. At 1600&sup2;, the cached fast renderer averages
+              <b>524&nbsp;FPS</b> with <b>1.17&nbsp;ms</b> TF switches.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= METHOD ======================= -->
+  <section class="section nd-reveal">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column is-full-width">
+          <h2 class="title is-3 has-text-centered">How It Works</h2>
+          <p class="content has-text-centered fs-cap">
+            The TF is a <b>function</b>, not a preset ID, and its effect differs across the scan. FactorSplat reads
+            each Gaussian's local region and intensity samples, then updates only its view-independent color and
+            opacity. Geometry and the N-DGS view response stay shared across every preset.
+          </p>
+          <img src="static/images/method.jpg" alt="FactorSplat method overview: inputs, local conditioning, one model for many transfer functions" style="width:100%;">
+
+          <div class="fs-grid">
+            <div class="fs-card">
+              <div class="tag-line">Direct &middot; physical lookup</div>
+              <h4>Authored TF response</h4>
+              <p>Weighted local samples apply the authored color and opacity change directly, centred on a base TF
+                 so the base preset is reproduced exactly.</p>
+            </div>
+            <div class="fs-card">
+              <div class="tag-line">Learned &middot; functional residual</div>
+              <h4>Appearance correction</h4>
+              <p>A shared pointwise encoder and rank-8 per-Gaussian factors learn how the cinematic renderer's image
+                 departs from the lookup.</p>
+            </div>
+            <div class="fs-card">
+              <div class="tag-line">Coverage &middot; visibility gate</div>
+              <h4>Hide and reveal structures</h4>
+              <p>An analytic visibility gate and TF-aware pruning keep primitives that any training preset needs, so
+                 hidden anatomy is still there to reveal.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= QUANTITATIVE ======================= -->
+  <section class="section hero is-light nd-reveal">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column is-full-width has-text-centered">
+          <h2 class="title is-3">Quantitative Results</h2>
+          <p class="content has-text-centered fs-cap">
+            Seven scans: five CT and two MR. Each has 41 TF conditions: 24 training presets, then held-out
+            validation, interpolation, unseen composition, and five OOD edits. Means weight scans equally within
+            each modality.
+          </p>
+          <div class="rfm-table-wrap">
+            <table class="rfm-metrics">
+              <thead>
+                <tr>
+                  <th rowspan="2"></th><th rowspan="2">Model</th>
+                  <th colspan="4" class="grp">&Delta;<sub>TF</sub>&darr; (&times;10<sup>&minus;2</sup>)</th>
+                  <th colspan="4" class="grp sep">PSNR&uarr;</th>
+                  <th rowspan="2" class="sep">FPS&uarr;</th><th rowspan="2">Train (min)&darr;</th>
+                </tr>
+                <tr>
+                  <th>val</th><th>interp</th><th>comp</th><th>OOD</th>
+                  <th class="sep">val</th><th>interp</th><th>comp</th><th>OOD</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td class="c-ds" rowspan="5">CT<small>5 scans</small></td><td>N-DGS (identity floor)</td>
+                  <td>3.60</td><td>6.49</td><td>8.96</td><td>17.74</td><td class="sep">31.11</td><td>27.88</td><td>25.50</td><td>21.11</td><td class="sep">851</td><td>6.9</td></tr>
+                <tr><td>N-DGS (specialist)</td>
+                  <td colspan="4">&mdash;</td><td class="sep">30.70</td><td>30.82</td><td>31.09</td><td class="best">31.94</td><td class="sep">866</td><td>92.8</td></tr>
+                <tr class="fs-dash"><td>VEG</td>
+                  <td>1.40</td><td>2.55</td><td>3.05</td><td>9.15</td><td class="sep">31.80</td><td>30.90</td><td>30.64</td><td>25.37</td><td class="sep">134</td><td>44.3</td></tr>
+                <tr><td>VEG (native-quantized)</td>
+                  <td>1.41</td><td>2.56</td><td>3.06</td><td>9.17</td><td class="sep">31.65</td><td>30.78</td><td>30.54</td><td>25.32</td><td class="sep">136</td><td>44.3</td></tr>
+                <tr class="rfm-ours"><td>FactorSplat (Ours)</td>
+                  <td class="best">1.36</td><td class="best">2.17</td><td class="best">2.88</td><td class="best">8.09</td><td class="sep best">33.08</td><td class="best">32.29</td><td class="best">31.33</td><td>26.58</td><td class="sep">508</td><td>10.5</td></tr>
+
+                <tr class="fs-block"><td class="c-ds" rowspan="5">MR<small>2 scans</small></td><td>N-DGS (identity floor)</td>
+                  <td>2.88</td><td>4.25</td><td>5.48</td><td>11.09</td><td class="sep">36.58</td><td>35.54</td><td>31.17</td><td>27.86</td><td class="sep">925</td><td>6.0</td></tr>
+                <tr><td>N-DGS (specialist)</td>
+                  <td colspan="4">&mdash;</td><td class="sep">37.03</td><td>37.04</td><td>37.07</td><td class="best">38.00</td><td class="sep">930</td><td>76.4</td></tr>
+                <tr class="fs-dash"><td>VEG</td>
+                  <td>1.19</td><td>1.89</td><td>1.59</td><td>5.16</td><td class="sep">38.82</td><td>38.52</td><td>37.82</td><td>31.24</td><td class="sep">169</td><td>42.6</td></tr>
+                <tr><td>VEG (native-quantized)</td>
+                  <td>1.19</td><td>1.90</td><td>1.59</td><td>5.15</td><td class="sep">38.67</td><td>38.39</td><td>37.70</td><td>31.20</td><td class="sep">171</td><td>42.6</td></tr>
+                <tr class="rfm-ours"><td>FactorSplat (Ours)</td>
+                  <td class="best">1.09</td><td class="best">1.62</td><td class="best">1.28</td><td class="best">4.65</td><td class="sep best">40.68</td><td class="best">40.36</td><td class="best">39.95</td><td>33.13</td><td class="sep">562</td><td>8.3</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="fs-note">
+            &Delta;<sub>TF</sub> = changed-region edit error between predicted and reference image differences from
+            the base TF. The identity floor has no TF input; specialists train one model per target TF, so they are
+            preset-specific references rather than upper bounds. FPS on B200 at 1600&sup2;. Bold = best per column.
+          </p>
+
+          <!-- ---------- Ablation ---------- -->
+          <h3 class="title is-4 has-text-centered" style="margin-top:3.2rem;">Ablation: every branch earns its place</h3>
+          <p class="content has-text-centered fs-cap">
+            Removing the physical lookup costs the most. The learned residual helps on all eight columns, the
+            functional code matters for edits far from training presets, and the gate helps when material is removed.
+          </p>
+          <div class="rfm-table-wrap">
+            <table class="rfm-metrics">
+              <thead>
+                <tr>
+                  <th rowspan="2">Variant (PSNR&uarr;)</th>
+                  <th colspan="4" class="grp">heart</th>
+                  <th colspan="4" class="grp sep">vascular</th>
+                  <th colspan="2" class="grp sep">robustness</th>
+                </tr>
+                <tr>
+                  <th>val</th><th>int.</th><th>cmp</th><th>OOD</th>
+                  <th class="sep">val</th><th>int.</th><th>cmp</th><th>OOD</th>
+                  <th class="sep">rank&darr;</th><th>gap (dB)&darr;</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="rfm-ours"><td>FactorSplat (Full)</td>
+                  <td class="best">30.79</td><td class="best">29.33</td><td class="best">28.68</td><td class="best">23.77</td>
+                  <td class="sep">34.20</td><td class="best">33.68</td><td>32.59</td><td class="best">30.88</td>
+                  <td class="sep best">1.69</td><td class="best">0.48</td></tr>
+                <tr><td>&minus; exact gate</td>
+                  <td class="best">30.79</td><td class="best">29.33</td><td class="best">28.68</td><td>23.45</td>
+                  <td class="sep">34.20</td><td class="best">33.68</td><td>32.59</td><td>30.36</td>
+                  <td class="sep">1.94</td><td>0.52</td></tr>
+                <tr><td>&minus; learned residual</td>
+                  <td>30.16</td><td>28.69</td><td>27.61</td><td>23.22</td>
+                  <td class="sep">33.70</td><td>32.55</td><td>31.92</td><td>29.28</td>
+                  <td class="sep">3.62</td><td>1.60</td></tr>
+                <tr><td>&minus; physical lookup</td>
+                  <td>29.77</td><td>27.48</td><td>26.11</td><td>20.30</td>
+                  <td class="sep">33.31</td><td>32.13</td><td>29.94</td><td>29.18</td>
+                  <td class="sep">4.88</td><td>3.47</td></tr>
+                <tr><td>&minus; functional code</td>
+                  <td>30.76</td><td>28.38</td><td>28.42</td><td>22.75</td>
+                  <td class="sep best">34.30</td><td class="best">33.68</td><td class="best">33.07</td><td>28.04</td>
+                  <td class="sep">2.88</td><td>2.84</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="fs-note">Rank 8. Rank and worst gap are over the eight scene&ndash;split comparisons.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= QUALITATIVE ======================= -->
+  <section class="section nd-reveal">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Qualitative Comparison</h2>
+      <p class="content has-text-centered fs-cap">
+        Held-out cameras and TFs against the N-DGS identity floor, per-TF N-DGS specialists, and VEG. Full-frame
+        PSNR under each image; bold marks each row's best.
+      </p>
+      <div class="columns fs-qual">
+        <div class="column is-half">
+          <img src="static/images/qualitative_heart.jpg" alt="Held-out CT and MR examples: heart, vascular, nose, hand">
+          <p class="fs-note has-text-centered">CT and MR: heart (rows 1&ndash;3), vascular (4&ndash;5), nose (6), hand (7).</p>
+        </div>
+        <div class="column is-half">
+          <img src="static/images/qualitative_vascular.jpg" alt="Additional held-out CT examples: vascular, heart, intestine, lower body">
+          <p class="fs-note has-text-centered">CT: vascular (rows 1&ndash;3), heart (4&ndash;5), intestine (6), lower body (7).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RELATED WORK (cross-reference network) ============ -->
+  <section class="section nd-related nd-reveal">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered" style="margin-bottom: 2rem;">The N-Dimensional Splatting Line</h2>
+      <div class="nd-related-grid">
+        <a class="nd-rel" href="https://gaozhongpai.github.io/6dgs/">
+          <span class="nd-rel-venue">ICLR 2025</span>
+          <span class="nd-rel-name">6DGS</span>
+          <span class="nd-rel-desc">Direction-aware 6D Gaussians for view-dependent volumetric rendering.</span>
+        </a>
+        <a class="nd-rel" href="https://gaozhongpai.github.io/7dgs/">
+          <span class="nd-rel-venue">ICCV 2025</span>
+          <span class="nd-rel-name">7DGS</span>
+          <span class="nd-rel-desc">Unified spatial-temporal-angular Gaussians for dynamic, view-dependent scenes.</span>
+        </a>
+        <a class="nd-rel" href="https://rongliu-leo.github.io/universal-beta-splatting/">
+          <span class="nd-rel-venue">ICLR 2026</span>
+          <span class="nd-rel-name">UBS</span>
+          <span class="nd-rel-desc">Universal Beta Splatting: anisotropic Beta kernels across space, angle, and time.</span>
+        </a>
+        <a class="nd-rel" href="https://gaozhongpai.github.io/dgs/">
+          <span class="nd-rel-venue">NeurIPS 2026</span>
+          <span class="nd-rel-name"><em class="tight">d</em>GS / <em class="tight">d</em>BS</span>
+          <span class="nd-rel-desc">Direct conditional parameterization &mdash; kernel-agnostic, up to 7.7&times; faster slicing.</span>
+        </a>
+        <a class="nd-rel" href="https://gaozhongpai.github.io/renderfm/">
+          <span class="nd-rel-venue">ECCV 2026</span>
+          <span class="nd-rel-name">Render-FM</span>
+          <span class="nd-rel-desc">Feedforward 6DGS for medical CT &mdash; 500&times; faster than per-scan optimization.</span>
+        </a>
+        <a class="nd-rel" href="https://gaozhongpai.github.io/XClipGS/">
+          <span class="nd-rel-venue">arXiv</span>
+          <span class="nd-rel-name">XClipGS</span>
+          <span class="nd-rel-desc">Exact, training-free half-space clipping with clip-aware interior supervision.</span>
+        </a>
+        <a class="nd-rel is-self">
+          <span class="nd-rel-venue">Under review</span>
+          <span class="nd-rel-name">FactorSplat</span>
+          <span class="nd-rel-desc">Editable transfer functions for medical Gaussian proxies &mdash; no retraining per preset.</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= FOOTER ======================= -->
+  <footer class="footer">
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column is-8">
+          <div class="content has-text-centered">
+            <p>
+              This page was built using the
+              <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a>,
+              adapted from the <a href="https://nerfies.github.io" target="_blank">Nerfies</a> project page.
+              Licensed under a
+              <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative
+                Commons Attribution-ShareAlike 4.0 International License</a>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+
+</html>
