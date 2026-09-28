@@ -1,7 +1,7 @@
 # FactorSplat — Project Page
 
 Project page for **FactorSplat: Appearance-Controllable Gaussian Proxies for Medical Volume Rendering**
-(under double-blind review; author list withheld until the decision).
+(under review at ICLR 2027). Zhongpai Gao, Benjamin Planche, Meng Zheng, Anwesa Choudhuri, Terrence Chen, Ziyan Wu.
 
 Live at https://gaozhongpai.github.io/FactorSplat/ — part of the [NDSplat](https://gaozhongpai.github.io/ndsplat/) line
 (6DGS, 7DGS, UBS, dGS/dBS, Render-FM, XClipGS, FactorSplat).
@@ -13,6 +13,8 @@ index.html                 # single page
 static/css/                # Bulma + shared NDSplat theme (ndsplat-theme.css)
 static/js/ndsplat-nav.js   # shared nav + scroll reveal
 static/images/             # teaser, method, qualitative figures (from the paper)
+static/videos/             # interactive demo
+static/pdfs/factorsplat.pdf # arXiv version of the paper (main_arxiv.tex)
 ```
 
 Fully static. Preview with `python3 -m http.server 8000`.
