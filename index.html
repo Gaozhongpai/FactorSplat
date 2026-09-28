@@ -54,6 +54,7 @@
     .rfm-metrics th.sep, .rfm-metrics td.sep{border-left:1px solid var(--line)}
     .rfm-metrics th.grp{text-align:center}
     .nd-hero .button.is-static-soon{opacity:.6;cursor:default;pointer-events:none}
+    .fs-demo{display:block;width:100%;border-radius:14px;box-shadow:var(--shadow-lg);background:#000}
     .fs-qual{margin-top:1.4rem}
     .fs-qual img{width:100%;border-radius:12px;box-shadow:var(--shadow)}
   </style>
@@ -140,6 +141,21 @@
           (middle); VEG (right) misses the edit. Full-frame PSNR.
         </h2>
       </div>
+    </div>
+  </section>
+
+  <!-- ======================= DEMO VIDEO ======================= -->
+  <section class="section nd-reveal" style="padding-top:1rem;">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Interactive Demo</h2>
+      <p class="content has-text-centered fs-cap">
+        A live session in the FactorSplat viewer. Stepping through transfer-function presets on the intestine,
+        lower-body, and heart scans reuses one trained checkpoint per scan, with no retraining between presets.
+      </p>
+      <video class="fs-demo" autoplay controls muted loop playsinline preload="metadata"
+             poster="static/videos/factorsplat_demo_poster.jpg">
+        <source src="static/videos/factorsplat_demo.mp4" type="video/mp4">
+      </video>
     </div>
   </section>
 
